@@ -47,7 +47,8 @@ module Fluent
           end
 
         path = File.join(dir, filename)
-        File.open(path, 'a')
+
+        File.open(path, 'a').tap{|f| f.sync = true }
       end
     end
   end
