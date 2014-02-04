@@ -31,10 +31,22 @@ module Fluent
       @files[tag] ||= begin
         tag_elems = tag.split('.')
         tag_elems.shift  # remove PREFIX
+
+        raise ConfigError, "Make sure the plugin requires input records to have at least two period-delimited tag parts"\
+          unless tag_elems.size > 0
+
         filename = tag_elems.pop
-        dir = File.join(@dir_root, *tag_elems)
+
+        dir =
+          if tag_elems.size > 0
+            File.join(@dir_root, *tag_elems).tap{|f|
+              FileUtils.mkdir_p f
+            }
+          else
+            @dir_root
+          end
+
         path = File.join(dir, filename)
-        FileUtils.mkdir_p dir
         File.open(path, 'a')
       end
     end
