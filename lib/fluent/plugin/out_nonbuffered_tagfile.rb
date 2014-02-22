@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-#TODO: Implement log rotation
+require 'logger'
 
 module Fluent
   class NonBufferedTagFileOutput < Output
@@ -11,24 +11,24 @@ module Fluent
 
     def configure(conf)
       super
-      @files = {}
+      @loggers = {}
     end
 
     def shutdown
-      @files.values.each do |f|
-        f.close
+      @loggers.values.each do |logger|
+        logger.close
       end
     end
 
     def emit(tag, es, chain)
       chain.next
       es.each {|time, record|
-        get_file(tag).write(eval(@format) + "\n")
+        get_logger(tag).info(eval(@format))
       }
     end
 
-    def get_file(tag)
-      @files[tag] ||= begin
+    def get_logger(tag)
+      @loggers[tag] ||= begin
         tag_elems = tag.split('.')
         tag_elems.shift  # remove PREFIX
 
@@ -48,7 +48,11 @@ module Fluent
 
         path = File.join(dir, filename)
 
-        File.open(path, 'a').tap{|f| f.sync = true }
+        Logger.new(path, 'daily').tap {|logger|
+          logger.formatter = proc {|severity, datetime, progname, msg|
+            "#{msg}\n"
+          }
+        }
       end
     end
   end
